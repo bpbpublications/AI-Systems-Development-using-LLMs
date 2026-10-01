@@ -1,0 +1,27 @@
+Chapter 12: Advanced RAG and Explainability
+
+Requirements:
+Python 3.10+
+
+====================================
+Example 1: Conceptual Hybrid RAG Pipeline
+====================================
+
+query = get_user_query()
+
+dense_results = dense_retrieve(query)
+sparse_results = sparse_retrieve(query)
+
+filtered_dense = apply_metadata_filters(dense_results)
+filtered_sparse = apply_metadata_filters(sparse_results)
+
+fused_results = fuse(filtered_dense, filtered_sparse)
+ranked_results = rerank(fused_results)
+
+context = build_context(ranked_results)
+
+answer = LLM_generate(context, query)
+
+return answer
+
+------------------------------------

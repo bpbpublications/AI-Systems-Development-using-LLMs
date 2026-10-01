@@ -1,0 +1,124 @@
+Chapter 7: Embeddings and Semantic Search
+
+Requirements:
+Python 3.10+
+sentence-transformers
+numpy
+faiss-cpu
+chromadb
+
+====================================
+Example 1: In-memory Semantic Search using Sentence-Transformers
+====================================
+
+from sentence_transformers import SentenceTransformer
+import numpy as np
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+documents = [
+    "Techniques for speeding up neural network training.",
+    "Introduction to convolutional neural networks.",
+    "Optimizing GPU utilization for deep learning workloads.",
+    "Understanding overfitting and regularization.",
+    "Building efficient data pipelines for large-scale training."
+]
+
+doc_embeddings = model.encode(
+    documents,
+    convert_to_numpy=True,
+    normalize_embeddings=True
+)
+
+def semantic_search(query, top_k=3):
+    query_emb = model.encode(
+        [query],
+        convert_to_numpy=True,
+        normalize_embeddings=True
+    )[0]
+
+    scores = np.dot(doc_embeddings, query_emb)
+    top_idx = np.argsort(scores)[::-1][:top_k]
+    return [(documents[i], float(scores[i])) for i in top_idx]
+
+query = "How can I reduce model training time?"
+print(semantic_search(query))
+
+------------------------------------
+
+====================================
+Example 2: Scalable Semantic Search with FAISS
+====================================
+
+from sentence_transformers import SentenceTransformer
+import numpy as np
+import faiss
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+documents = [
+    "Techniques for speeding up neural network training.",
+    "Introduction to convolutional neural networks.",
+    "Optimizing GPU utilization for deep learning workloads.",
+    "Understanding overfitting and regularization.",
+    "Building efficient data pipelines for large-scale training."
+]
+
+emb = model.encode(documents).astype("float32")
+faiss.normalize_L2(emb)
+
+index = faiss.IndexFlatIP(emb.shape[1])
+index.add(emb)
+
+def search_faiss(query, top_k=3):
+    q = model.encode([query]).astype("float32")
+    faiss.normalize_L2(q)
+    scores, idxs = index.search(q, top_k)
+    return [(documents[i], float(scores[0][j])) for j, i in enumerate(idxs[0])]
+
+query = "How can I reduce model training time?"
+print(search_faiss(query))
+
+------------------------------------
+
+====================================
+Example 3: Semantic Search with Chroma Database
+====================================
+
+import chromadb
+from chromadb.config import Settings
+from sentence_transformers import SentenceTransformer
+
+client = chromadb.Client(Settings(anonymized_telemetry=False))
+collection = client.create_collection("docs")
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+documents = [
+    "Techniques for speeding up neural network training.",
+    "Introduction to convolutional neural networks.",
+    "Optimizing GPU utilization for deep learning workloads.",
+    "Understanding overfitting and regularization.",
+    "Building efficient data pipelines for large-scale training."
+]
+
+doc_ids = [f"doc-{i}" for i in range(len(documents))]
+
+collection.add(
+    ids=doc_ids,
+    documents=documents,
+    embeddings=model.encode(documents).tolist()
+)
+
+def search_chroma(query, top_k=3):
+    q_emb = model.encode([query]).tolist()
+    results = collection.query(
+        query_embeddings=q_emb,
+        n_results=top_k
+    )
+    return list(zip(results["documents"][0], results["distances"][0]))
+
+query = "How can I reduce model training time?"
+print(search_chroma(query))
+
+------------------------------------

@@ -1,0 +1,146 @@
+Chapter 9: Chunking Strategies and Vector Databases
+
+Requirements:
+Python 3.10+
+sentence-transformers
+chromadb
+faiss-cpu
+weaviate-client
+numpy
+
+====================================
+Example 1: Fixed-Length Word Chunking
+====================================
+
+def fixed_length_word_chunk(text, chunk_size=300, overlap=50):
+    if overlap >= chunk_size:
+        raise ValueError("overlap must be smaller than chunk_size")
+    words = text.split()
+    chunks = []
+    start = 0
+    while start < len(words):
+        end = start + chunk_size
+        chunks.append(" ".join(words[start:end]))
+        start = end - overlap
+    return chunks
+
+------------------------------------
+
+====================================
+Example 2: Sliding Window Chunking
+====================================
+
+def sliding_window_chunk(text, window_size=300, stride=150):
+    if stride <= 0:
+        raise ValueError("stride must be greater than 0")
+    if stride > window_size:
+        raise ValueError("stride should not exceed window_size")
+    words = text.split()
+    chunks = []
+    start = 0
+    while start < len(words):
+        end = start + window_size
+        chunks.append(" ".join(words[start:end]))
+        start += stride
+    return chunks
+
+------------------------------------
+
+====================================
+Example 3: Semantic Chunking
+====================================
+
+from sentence_transformers import SentenceTransformer, util
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+def semantic_chunk(paragraphs, threshold=0.55):
+    if not paragraphs:
+        return []
+    paragraphs = [p.strip() for p in paragraphs if p and p.strip()]
+    if not paragraphs:
+        return []
+    chunks = []
+    current_group = [paragraphs[0]]
+    embeddings = model.encode(paragraphs, convert_to_tensor=True)
+    for i in range(1, len(paragraphs)):
+        sim_score = util.cos_sim(embeddings[i-1], embeddings[i]).item()
+        if sim_score >= threshold:
+            current_group.append(paragraphs[i])
+        else:
+            chunks.append("\n".join(current_group))
+            current_group = [paragraphs[i]]
+    chunks.append("\n".join(current_group))
+    return chunks
+
+------------------------------------
+
+====================================
+Example 4: Working with ChromaDB
+====================================
+
+import chromadb
+from chromadb.config import Settings
+
+client = chromadb.Client(Settings(anonymized_telemetry=False))
+collection = client.create_collection("docs")
+
+collection.add(
+    ids=["1","2"],
+    documents=[
+        "RAG improves answer quality using retrieval.",
+        "Chunking strategies influence retrieval accuracy."
+    ]
+)
+
+results = collection.query(
+    query_texts=["How to improve retrieval?"],
+    n_results=2
+)
+print(results)
+
+------------------------------------
+
+====================================
+Example 5: Working with FAISS
+====================================
+
+import faiss
+import numpy as np
+
+dimension = 384
+index = faiss.IndexFlatL2(dimension)
+
+vectors = np.random.random((5, dimension)).astype("float32")
+index.add(vectors)
+
+query_vector = np.random.random((1, dimension)).astype("float32")
+distances, ids = index.search(query_vector, k=3)
+
+print(ids)
+
+------------------------------------
+
+====================================
+Example 6: Working with Weaviate
+====================================
+
+import weaviate
+
+client = weaviate.Client("http://localhost:8080")
+
+schema = {
+    "classes": [{
+        "class": "Document",
+        "vectorizer": "text2vec-openai"
+    }]
+}
+
+client.schema.create(schema)
+
+client.data_object.create(
+    data={"text":"Chunking improves retrieval performance in RAG systems."},
+    class_name="Document"
+)
+
+------------------------------------

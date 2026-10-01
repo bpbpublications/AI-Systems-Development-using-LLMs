@@ -1,0 +1,152 @@
+Chapter 10: Conversational Applications with LLMs
+
+Requirements:
+Python 3.10+
+openai
+chromadb
+langchain
+langchain-openai
+langchain-chroma
+
+====================================
+Example 1: Creating Embeddings for User Queries
+====================================
+
+from openai import OpenAI
+
+client = OpenAI()
+
+queries = [
+    "How do I change my plan?",
+    "Why did my bill increase this month?",
+    "Help me reset my password."
+]
+
+embeddings = client.embeddings.create(
+    model="text-embedding-3-small",
+    input=queries
+)
+
+for q, vector in zip(queries, embeddings.data):
+    print(q, "→ embedding length:", len(vector.embedding))
+
+------------------------------------
+
+====================================
+Example 2: Context-Aware Prompt Assembly
+====================================
+
+def truncate_context(text, max_chars=3000):
+    return text[:max_chars]
+
+def build_messages(user_msg, recent_history, retrieved_docs, summary):
+    limited_docs = truncate_context(retrieved_docs)
+    return [
+        {
+            "role": "system",
+            "content": "You are a helpful and factual assistant."
+        },
+        {
+            "role": "user",
+            "content": f"""
+Conversation Summary:
+{summary}
+
+Recent Dialogue:
+{recent_history}
+
+Retrieved Knowledge:
+{limited_docs}
+
+User Query:
+{user_msg}
+"""
+        }
+    ]
+
+------------------------------------
+
+====================================
+Example 3: Semantic Memory using ChromaDB
+====================================
+
+import uuid
+import chromadb
+from openai import OpenAI
+
+client = OpenAI()
+
+db = chromadb.PersistentClient(path="./conversation_memory_db")
+collection = db.get_or_create_collection("conversation_memory")
+
+def store_memory(text):
+    emb = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=text
+    ).data[0].embedding
+
+    collection.add(
+        ids=[str(uuid.uuid4())],
+        documents=[text],
+        embeddings=[emb]
+    )
+
+------------------------------------
+
+====================================
+Example 4: Basic LangChain Chatbot
+====================================
+
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant."),
+    ("human", "{user_input}")
+])
+
+chain = prompt | llm
+
+response = chain.invoke({"user_input": "Hello!"})
+
+print(response)
+
+------------------------------------
+
+====================================
+Example 5: LangChain RAG Chatbot
+====================================
+
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_chroma import Chroma
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import ChatPromptTemplate
+
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+
+vectordb = Chroma.from_texts(
+    texts=document_list,
+    embedding=embeddings
+)
+
+retriever = vectordb.as_retriever(search_kwargs={"k": 3})
+
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+prompt = ChatPromptTemplate.from_template("""
+Use the following retrieved context to answer the question.
+
+Context:
+{context}
+
+Question:
+{input}
+""")
+
+document_chain = create_stuff_documents_chain(llm, prompt)
+rag_chain = create_retrieval_chain(retriever, document_chain)
+
+------------------------------------

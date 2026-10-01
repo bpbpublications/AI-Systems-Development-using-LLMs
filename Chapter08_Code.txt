@@ -1,0 +1,72 @@
+Chapter 8: Fine-Tuning and Customizing Embeddings
+
+Requirements:
+Python 3.10+
+sentence-transformers
+torch
+
+====================================
+Example 1: General-Purpose Embeddings for Legal Retrieval
+====================================
+
+from sentence_transformers import SentenceTransformer, util
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+query = "limitation of liability for indirect damages"
+
+documents = [
+    "The agreement may be terminated with thirty days notice.",
+    "Invoices must be paid within thirty days.",
+    "Neither party shall be liable for indirect or consequential damages.",
+    "All confidential information must be protected.",
+    "The supplier shall not be responsible for loss of profits."
+]
+
+query_embedding = model.encode(query, convert_to_tensor=True)
+doc_embeddings = model.encode(documents, convert_to_tensor=True)
+
+scores = util.cos_sim(query_embedding, doc_embeddings)[0]
+
+for doc, score in zip(documents, scores):
+    print(f"{score:.4f} : {doc}")
+
+------------------------------------
+
+====================================
+Example 2: Contrastive Fine-Tuning using Sentence-Transformers
+====================================
+
+from sentence_transformers import SentenceTransformer, InputExample, losses
+from torch.utils.data import DataLoader
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
+
+train_examples = [
+    InputExample(
+        texts=["angiogenesis process", "formation of new blood vessels"],
+        label=1.0
+    ),
+    InputExample(
+        texts=["angiogenesis", "histopathology"],
+        label=0.0
+    ),
+]
+
+train_dataloader = DataLoader(
+    train_examples,
+    shuffle=True,
+    batch_size=2
+)
+
+train_loss = losses.CosineSimilarityLoss(model)
+
+model.fit(
+    train_objectives=[(train_dataloader, train_loss)],
+    epochs=3,
+    warmup_steps=0
+)
+
+model.save("biomedical_embedding_model")
+
+------------------------------------

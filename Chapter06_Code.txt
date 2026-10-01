@@ -1,0 +1,16 @@
+Chapter 6: Advanced Prompt Engineering Techniques
+
+Requirements:
+Python 3.10+
+
+====================================
+Example 1: Multi-Step Software Debugging (Corrected Python Code)
+====================================
+
+def add_numbers(a, b):
+    result = a + b
+    return result
+
+print(add_numbers(3, 5))
+
+------------------------------------

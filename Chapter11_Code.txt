@@ -1,0 +1,67 @@
+Chapter 11: Designing Retrieval-Augmented Generation Systems
+
+Requirements:
+Python 3.10+
+langchain
+langchain-openai
+chromadb
+
+====================================
+Example 1: Loading a PDF using LangChain
+====================================
+
+from langchain.document_loaders import PyPDFLoader
+
+loader = PyPDFLoader("manuals/device_policy.pdf")
+documents = loader.load()
+
+------------------------------------
+
+====================================
+Example 2: Creating a Vector Store
+====================================
+
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores import Chroma
+
+emb = OpenAIEmbeddings()
+vector_store = Chroma.from_documents(documents, emb)
+
+------------------------------------
+
+====================================
+Example 3: LCEL-based RAG Pipeline
+====================================
+
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+retriever = vector_store.as_retriever()
+llm = ChatOpenAI(model="gpt-4o-mini")
+
+prompt = ChatPromptTemplate.from_template(
+    "Answer the question using only the following context.\n\n"
+    "Context:\n{context}\n\n"
+    "Question:\n{question}\n\n"
+    "Answer:"
+)
+
+rag_chain = (
+    {
+        "context": retriever | format_docs,
+        "question": RunnablePassthrough()
+    }
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+response = rag_chain.invoke("How do I enable secure mode?")
+print(response)
+
+------------------------------------

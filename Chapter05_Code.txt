@@ -1,0 +1,138 @@
+Chapter 5: Fundamentals of Prompt Engineering
+
+Requirements:
+Python 3.10+
+openai
+anthropic
+
+Environment Variables:
+OPENAI_API_KEY
+ANTHROPIC_API_KEY
+
+====================================
+Example 1: Zero-Shot Summarization using OpenAI
+====================================
+
+import os
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+prompt = """
+Summarize the following paragraph in 50 words:
+
+The global adoption of renewable energy continues to accelerate, driven by
+falling solar costs, supportive policies, and corporate sustainability targets.
+However, grid integration challenges and storage limitations remain key issues.
+"""
+
+response = client.chat.completions.create(
+    model="gpt-4-turbo",
+    messages=[{"role": "user", "content": prompt}]
+)
+
+print(response.choices[0].message.content)
+
+
+------------------------------------
+
+====================================
+Example 2: Few-Shot Sentiment Classification using OpenAI
+====================================
+
+import os
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+prompt = """
+Classify each review as Positive or Negative.
+
+Review: The app crashes every time I open it.
+Sentiment: Negative
+
+Review: Absolutely love the new interface and speed.
+Sentiment: Positive
+
+Review: Battery drains too fast and notifications lag.
+Sentiment:
+"""
+
+response = client.chat.completions.create(
+    model="gpt-4-turbo",
+    messages=[{"role": "user", "content": prompt}]
+)
+
+print(response.choices[0].message.content)
+
+
+------------------------------------
+
+====================================
+Example 3: Instruction-Based Task Execution using Anthropic
+====================================
+
+import os
+import anthropic
+
+client = anthropic.Anthropic(
+    api_key=os.environ["ANTHROPIC_API_KEY"]
+)
+
+prompt = """
+You are a data analyst. Review the quarterly sales figures below
+and provide a three-point summary with actionable recommendations.
+
+Respond in bullet points under 100 words.
+
+Sales Data:
+Q1 - $1.2 M
+Q2 - $1.5 M
+Q3 - $1.9 M
+Q4 - $2.1 M
+"""
+
+response = client.messages.create(
+    model="claude-3-sonnet-20240229",
+    max_tokens=300,
+    messages=[{"role": "user", "content": prompt}]
+)
+
+print(response.content[0].text)
+
+
+------------------------------------
+
+====================================
+Example 4: Iterative Prompt Refinement using OpenAI
+====================================
+
+import os
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+
+def run_prompt(task_prompt):
+    result = client.chat.completions.create(
+        model="gpt-4-turbo",
+        messages=[{"role": "user", "content": task_prompt}]
+    )
+    return result.choices[0].message.content
+
+
+base_prompt = "Explain the importance of prompt engineering."
+
+print("Baseline Response:")
+print(run_prompt(base_prompt))
+
+refined_prompt = """
+You are a technical author. Explain the importance of prompt engineering
+in three concise bullet points, focusing on clarity, efficiency, and reproducibility.
+"""
+
+print("\nRefined Response:")
+print(run_prompt(refined_prompt))
+
+
+------------------------------------

@@ -1,0 +1,27 @@
+Chapter 3: Open-Source LLM Ecosystem
+
+Requirements:
+Python 3.10+
+torch
+transformers
+
+====================================
+Example 1: Loading a Pretrained Open-Source LLM using Hugging Face Transformers
+====================================
+
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+
+model_id = "mistralai/Mistral-7B-Instruct-v0.3"
+
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    torch_dtype=torch.float16,
+    device_map="auto"
+)
+
+print("Model loaded successfully.")
+
+------------------------------------

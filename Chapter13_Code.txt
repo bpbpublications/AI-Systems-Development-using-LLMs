@@ -1,0 +1,53 @@
+Chapter 13: Building Foundations of AI Agents
+
+Requirements:
+Python 3.10+
+langchain
+openai
+
+====================================
+Example 1: Simple Task Execution using a LangChain AI Agent
+====================================
+
+from langchain.agents import initialize_agent, Tool
+from langchain.llms import OpenAI
+import math
+
+# Define tools
+def search_population(query):
+    # Simulated knowledge source
+    if "population of India" in query.lower():
+        return "India population is approximately 1.43 billion."
+    return "Data not found."
+
+def calculator(expression):
+    return str(math.sqrt(float(expression)))
+
+tools = [
+    Tool(
+        name="Search",
+        func=search_population,
+        description="Search for factual data"
+    ),
+    Tool(
+        name="Calculator",
+        func=calculator,
+        description="Perform mathematical calculations"
+    )
+]
+
+# Initialize LLM
+llm = OpenAI()
+
+# Initialize agent
+agent = initialize_agent(
+    tools=tools,
+    llm=llm,
+    agent="zero-shot-react-description",
+    verbose=True
+)
+
+# Run agent
+agent.run("Find the population of India and calculate its square root.")
+
+------------------------------------
